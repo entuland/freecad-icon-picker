@@ -1,19 +1,19 @@
 import { iconpaths } from "/png/iconpaths.js";
 
 const data = {};
-const wb_icons = {};
-
+const src_by_name = {};
 const canvases = [];
-
 const level_prefix = "{LEVEL}";
-
+const output = document.getElementById("output");
 const status = document.getElementById("status");
-
+const search = document.getElementById("search");
 const status_reset_ms = 2000;
-
 const default_status_string = "Click an icon to copy it raw and generate variants, click generated variant to copy it instead";
 
 let timeout_handle;
+let debounce_interval = 500;
+let debounce_handle;
+let latest_button_callback;
 
 createInterface();
 
@@ -22,17 +22,13 @@ function createInterface() {
 	createCanvases();
 	
 	status.textContent = default_status_string;
+	search.addEventListener("input", runSearch);
 	
 	const buttons = document.getElementById("buttons");
-	
-	const output = document.getElementById("output");
-	
 	document.getElementById("canvases").append(...canvases);
 	
 	let initialize;
-	
 	traverseObject(data, processEntry);
-	
 	initialize?.();
 	
 	function processEntry({ key, value }) {
@@ -50,7 +46,7 @@ function createInterface() {
 		
 		const stripped_key = key.replace(level_prefix, "");
 		
-		const src = wb_icons[stripped_key + "Workbench"];
+		const src = src_by_name[stripped_key + "Workbench"];
 		
 		button.append(stripped_key);
 		
@@ -70,10 +66,49 @@ function createInterface() {
 		buttons.append(button);
 		
 		function onButtonClicked() {
+			latest_button_callback = onButtonClicked;
 			buttons.querySelectorAll(".button.active").forEach(b => b.classList.remove("active"));
 			button.classList.add("active");
 			populateSection(key, value, output);
 		}
+	}
+}
+
+function runSearch() {
+	
+	clearTimeout(debounce_handle);
+	
+	debounce_handle = setTimeout(runSearchInternal, debounce_interval);
+	
+	function runSearchInternal() {
+		try {
+			let text = search.value.trim();
+			if(text == "") {
+				latest_button_callback?.();
+				return;
+			}
+			runRegexSearch(new RegExp(search.value, "gi"));
+		} catch(err) {
+			console.error("runSearchInternal()", err);
+			setError("Invalid regex search pattern");
+		}
+	}
+	
+	function runRegexSearch(regex) {
+		const icons = [];
+		
+		const names = Object.keys(src_by_name).filter(name => name.match(regex));
+		
+		if(!names.length) {
+			setError("No matching icons found");
+			return;
+		}
+		
+		output.textContent = "";
+		
+		names.forEach(name => {
+			appendIcon(name, src_by_name[name], output);
+		});		
 	}
 }
 
@@ -139,69 +174,69 @@ function populateSection(mod, children, container) {
 			});
 		}
 	}
+}
+
+function appendIcon(name, src, container) {
+	const icon = document.createElement("img");
+	icon.title = name + "\n\nclick to copy and generate variants";
+	icon.classList.add("icon");
+	icon.src = src;
 	
-	function appendIcon(name, src, container) {
-		const icon = document.createElement("img");
-		icon.title = name + "\n\nclick to copy and generate variants";
-		icon.classList.add("icon");
-		icon.src = src;
+	icon.addEventListener("click", printIcons);
+	
+	container.append(icon);
+	
+	const font = "16px sans-serif";
+	
+	function printIcons() {
+		copyToClipboard(icon);
 		
-		icon.addEventListener("click", printIcons);
+		printIcon(canvases[0]);
 		
-		container.append(icon);
+		const w = canvases[0].width;
+		const h = canvases[0].height;
 		
-		const font = "16px sans-serif";
+		const backgrounds = [
+			"hsl(0 0% 10%)",
+			"hsl(0 0% 50%)",
+			"hsl(0 0% 90%)",
+		];
 		
-		function printIcons() {
-			copyToClipboard(icon);
-			
-			printIcon(canvases[0]);
-			
-			const w = canvases[0].width;
-			const h = canvases[0].height;
-			
-			const backgrounds = [
-				"hsl(0 0% 10%)",
-				"hsl(0 0% 50%)",
-				"hsl(0 0% 90%)",
-			];
-			
-			canvases.slice(1).forEach((canvas, index) => {
-				canvas.width = w;
-				canvas.height = h;
-				const ctx = canvas.getContext("2d");
-				ctx.fillStyle = backgrounds[index];
-				ctx.fillRect(w/2 - 68/2, 0, 68, 68);
-				ctx.drawImage(canvases[0], 0, 0);
-			});			
-		}
-		
-		function printIcon(canvas) {
+		canvases.slice(1).forEach((canvas, index) => {
+			canvas.width = w;
+			canvas.height = h;
 			const ctx = canvas.getContext("2d");
-			
-			ctx.font = font;
-			
-			let metrics = ctx.measureText(" " + name + " ");
-			const height_metrics = ctx.measureText("Aq");
-			
-			const height = height_metrics.actualBoundingBoxAscent + height_metrics.actualBoundingBoxDescent + 8;
-			
-			canvas.width = Math.max(metrics.width, 68);
-			canvas.height = height + 64;
-			
-			ctx.font = font;
-			ctx.fillStyle = "black";
-			
-			let start = canvas.width / 2 - metrics.width / 2;
-			ctx.fillRect(start, 66, metrics.width, height);
-			
-			metrics = ctx.measureText(name);
-			start = canvas.width / 2 - metrics.width / 2;
-			ctx.fillStyle = "white";
-			
-			ctx.fillText(name, start, 70 + metrics.actualBoundingBoxAscent);
-			ctx.drawImage(icon, canvas.width / 2 - 32, 0, 64, 64);
-		}
+			ctx.fillStyle = backgrounds[index];
+			ctx.fillRect(w/2 - 68/2, 0, 68, 68);
+			ctx.drawImage(canvases[0], 0, 0);
+		});			
+	}
+	
+	function printIcon(canvas) {
+		const ctx = canvas.getContext("2d");
+		
+		ctx.font = font;
+		
+		let metrics = ctx.measureText(" " + name + " ");
+		const height_metrics = ctx.measureText("Aq");
+		
+		const height = height_metrics.actualBoundingBoxAscent + height_metrics.actualBoundingBoxDescent + 8;
+		
+		canvas.width = Math.max(metrics.width, 68);
+		canvas.height = height + 64;
+		
+		ctx.font = font;
+		ctx.fillStyle = "black";
+		
+		let start = canvas.width / 2 - metrics.width / 2;
+		ctx.fillRect(start, 66, metrics.width, height);
+		
+		metrics = ctx.measureText(name);
+		start = canvas.width / 2 - metrics.width / 2;
+		ctx.fillStyle = "white";
+		
+		ctx.fillText(name, start, 70 + metrics.actualBoundingBoxAscent);
+		ctx.drawImage(icon, canvas.width / 2 - 32, 0, 64, 64);
 	}
 }
 
@@ -223,9 +258,7 @@ function prepareData() {
 		
 		const path = iconpaths[identifier];
 		
-		if(name.toLowerCase().includes("workbench")) {
-			wb_icons[name] = path;
-		}
+		src_by_name[name] = path;
 		
 		let current = data;
 		
