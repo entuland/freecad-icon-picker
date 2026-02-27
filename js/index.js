@@ -1,4 +1,4 @@
-import { iconpaths } from "/png/iconpaths.js";
+import { iconpaths } from "../png/iconpaths.js";
 
 const data = {};
 const src_by_name = {};
