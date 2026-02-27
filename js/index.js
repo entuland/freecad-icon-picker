@@ -67,6 +67,7 @@ function createInterface() {
 		
 		function onButtonClicked() {
 			latest_button_callback = onButtonClicked;
+			search.value = "";
 			buttons.querySelectorAll(".button.active").forEach(b => b.classList.remove("active"));
 			button.classList.add("active");
 			populateSection(key, value, output);
