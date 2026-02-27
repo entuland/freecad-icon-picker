@@ -1,7 +1,6 @@
 import { iconpaths } from "/png/iconpaths.js";
 
 const data = {};
-
 const wb_icons = {};
 
 const canvases = [];
@@ -13,6 +12,8 @@ const status = document.getElementById("status");
 const status_reset_ms = 2000;
 
 const default_status_string = "Click an icon to copy it raw and generate variants, click generated variant to copy it instead";
+
+let timeout_handle;
 
 createInterface();
 
@@ -36,7 +37,8 @@ function createInterface() {
 	
 	function processEntry({ key, value }) {
 		if(typeof value == "string") {
-			console.error("invalid entry in processEntry", { key, value });
+			console.error("processEntry()", { key, value });
+			setError("Invalid entry in processEntry, check console");
 			return;
 		}
 		appendButton(key, value);
@@ -75,8 +77,6 @@ function createInterface() {
 	}
 }
 
-let timeout_handle;
-
 function setStatus(text, type = "alert") {
 	status.textContent = text;
 	status.classList.value = "";
@@ -86,6 +86,10 @@ function setStatus(text, type = "alert") {
 		status.classList.value = "";
 		status.textContent = default_status_string;		
 	}, status_reset_ms);
+}
+
+function setError(text) {
+	setStatus(text, "error");
 }
 
 function createCanvases() {
@@ -249,13 +253,13 @@ function copyToClipboard(element) {
 		const ctx = canvas.getContext("2d");
 		ctx.drawImage(element, 0, 0);
 	} else {
-		setStatus("Element must be an <img> or <canvas>");
+		setError("Element must be an <img> or <canvas>");
 		return;
 	}
 
 	canvas.toBlob(blob => {
 		if (!blob) {
-			setStatus("Failed to create blob");
+			setError("Failed to create blob");
 			return;
 		}
 
@@ -263,7 +267,10 @@ function copyToClipboard(element) {
 
 		navigator.clipboard.write([item])
 			.then(() => setStatus("Image copied to clipboard!"))
-			.catch(err => setStatus("Clipboard write failed:", err));
+			.catch(err => {
+				console.error(err);
+				setError("Clipboard write failed, check console");
+			});
 		
 	}, "image/png");
 }
