@@ -188,11 +188,15 @@ function appendIcon(name, src, container) {
 	container.append(icon);
 	
 	const font = "16px sans-serif";
+	const img_padding = 4;
 	
 	function printIcons() {
 		copyToClipboard(icon);
 		
-		printIcon(canvases[0]);
+		const img_w = icon.naturalWidth + img_padding;
+		const img_h = icon.naturalHeight + img_padding;
+
+		printIcon(canvases[0], img_w, img_h);
 		
 		const w = canvases[0].width;
 		const h = canvases[0].height;
@@ -208,36 +212,38 @@ function appendIcon(name, src, container) {
 			canvas.height = h;
 			const ctx = canvas.getContext("2d");
 			ctx.fillStyle = backgrounds[index];
-			ctx.fillRect(w/2 - 68/2, 0, 68, 68);
+			ctx.fillRect(w/2 - img_w/2, 0, img_w, img_h);
 			ctx.drawImage(canvases[0], 0, 0);
 		});			
 	}
 	
-	function printIcon(canvas) {
+	function printIcon(canvas, img_w, img_h) {
 		const ctx = canvas.getContext("2d");
+		
+		const text_rendering_added_height = 8;
 		
 		ctx.font = font;
 		
 		let metrics = ctx.measureText(" " + name + " ");
 		const height_metrics = ctx.measureText("Aq");
 		
-		const height = height_metrics.actualBoundingBoxAscent + height_metrics.actualBoundingBoxDescent + 8;
+		const height = height_metrics.actualBoundingBoxAscent + height_metrics.actualBoundingBoxDescent + text_rendering_added_height;
 		
-		canvas.width = Math.max(metrics.width, 68);
-		canvas.height = height + 64;
+		canvas.width = Math.max(metrics.width, img_w);
+		canvas.height = height + img_h;
 		
 		ctx.font = font;
 		ctx.fillStyle = "black";
 		
 		let start = canvas.width / 2 - metrics.width / 2;
-		ctx.fillRect(start, 66, metrics.width, height);
+		ctx.fillRect(start, img_h, metrics.width, height);
 		
 		metrics = ctx.measureText(name);
 		start = canvas.width / 2 - metrics.width / 2;
 		ctx.fillStyle = "white";
 		
-		ctx.fillText(name, start, 70 + metrics.actualBoundingBoxAscent);
-		ctx.drawImage(icon, canvas.width / 2 - 32, 0, 64, 64);
+		ctx.fillText(name, start, img_h + metrics.actualBoundingBoxAscent + text_rendering_added_height/2);
+		ctx.drawImage(icon, canvas.width/2 - img_w/2, 0, img_w, img_h);
 	}
 }
 
