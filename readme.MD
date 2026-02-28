@@ -5,3 +5,5 @@ FreeCAD icons, either raw or with added text / background
 
 FreeCAD https://github.com/freecad/freecad
 
+Live version of the picker: https://entuland.github.io/freecad-icon-picker/
+
