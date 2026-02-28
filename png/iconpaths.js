@@ -1,6 +1,6 @@
 export const iconpaths = {
-  "Tools:_TEMPLATE_Workbench": "./png/Tools/_TEMPLATE_Workbench.png",
-  "Tools:_TEMPLATEPY_Workbench": "./png/Tools/_TEMPLATEPY_Workbench.png",
+  "Tools:TEMPLATE_Workbench": "./png/Tools/TEMPLATE_Workbench.png",
+  "Tools:TEMPLATEPY_Workbench": "./png/Tools/TEMPLATEPY_Workbench.png",
   "Tux:NavigationBlender_dark": "./png/Tux/NavigationBlender_dark.png",
   "Tux:NavigationBlender_light": "./png/Tux/NavigationBlender_light.png",
   "Tux:NavigationCADAlt": "./png/Tux/NavigationCADAlt.png",
