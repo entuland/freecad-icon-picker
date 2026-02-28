@@ -7,8 +7,9 @@ const level_prefix = "{LEVEL}";
 const output = document.getElementById("output");
 const status = document.getElementById("status");
 const search = document.getElementById("search");
+const canvases_wrapper = document.getElementById("canvases");
 const status_reset_ms = 2000;
-const default_status_string = "Click an icon to copy it raw and generate variants, click generated variant to copy it instead";
+const default_status_string = "Click an icon to copy it raw and generate variants, click generated variant to copy it instead, doubleclick either the icon or a variant to download it";
 
 let timeout_handle;
 let debounce_interval = 500;
@@ -18,14 +19,15 @@ let latest_button_callback;
 createInterface();
 
 function createInterface() {
+	canvases_wrapper.style.display = "none";
+	
 	prepareData();
-	createCanvases();
+	prepareCanvases();
 	
 	status.textContent = default_status_string;
 	search.addEventListener("input", runSearch);
 	
 	const buttons = document.getElementById("buttons");
-	document.getElementById("canvases").append(...canvases);
 	
 	let initialize;
 	traverseObject(data, processEntry);
@@ -128,14 +130,50 @@ function setError(text) {
 	setStatus(text, "error");
 }
 
-function createCanvases() {
+function prepareCanvases() {
 	for(let i = 0; i < 4; ++i) {
 		const canvas = document.createElement("canvas");
 		canvas.width = canvas.height = 0;
-		canvas.title = "click to copy this variant";
+		canvas.title = "click to copy this variant, doubleclick to download it";
+		
 		canvas.addEventListener("click", () => {
 			copyToClipboard(canvas);
 		});
+		
+		canvas.addEventListener("dblclick", () => {
+			downloadCanvas(canvas, canvas.dataset.name);
+		});
+		
+		const wrapper = document.createElement("div");
+		wrapper.classList.add("canvas-wrapper");
+		
+		const download_button = document.createElement("button");
+		download_button.classList.add("button");
+		download_button.textContent = "📥";
+		download_button.title = "download this variant";
+		
+		download_button.addEventListener("click", () => {
+			downloadCanvas(canvas, canvas.dataset.name);
+		});
+		
+		const copy_button = document.createElement("button");
+		copy_button.classList.add("button");
+		copy_button.textContent = "📋";
+		copy_button.title = "copy this variant to clipboard";
+		
+		copy_button.addEventListener("click", () => {
+			copyToClipboard(canvas);
+		});
+		
+		const buttons = document.createElement("div");
+		buttons.classList.add("copy-download-buttons");
+		
+		buttons.append(download_button, copy_button);
+		
+		wrapper.append(canvas, buttons);
+		
+		canvases_wrapper.append(wrapper);
+		
 		canvases.push(canvas);
 	}
 }
@@ -179,41 +217,53 @@ function populateSection(mod, children, container) {
 
 function appendIcon(name, src, container) {
 	const icon = document.createElement("img");
-	icon.title = name + "\n\nclick to copy and generate variants";
+	icon.title = name + "\n\nclick to copy and generate variants\n\ndoubleclick to download";
 	icon.classList.add("icon");
 	icon.src = src;
 	
 	icon.addEventListener("click", printIcons);
+	icon.addEventListener("dblclick", () => downloadIcon(icon, name + ".png"));
 	
 	container.append(icon);
 	
 	const font = "16px sans-serif";
 	const img_padding = 4;
 	
+	const backgrounds = {
+		dark: "hsl(0 0% 10%)",
+		gray: "hsl(0 0% 50%)",
+		light: "hsl(0 0% 90%)",
+	};
+	
+	const bg_keys = Object.keys(backgrounds);
+	const bg_values = Object.values(backgrounds);
+	
+	
 	function printIcons() {
+		canvases_wrapper.style.display = "";
+		
 		copyToClipboard(icon);
 		
 		const img_w = icon.naturalWidth + img_padding;
 		const img_h = icon.naturalHeight + img_padding;
-
-		printIcon(canvases[0], img_w, img_h);
 		
-		const w = canvases[0].width;
-		const h = canvases[0].height;
+		const transparent_canvas = canvases[0];
 		
-		const backgrounds = [
-			"hsl(0 0% 10%)",
-			"hsl(0 0% 50%)",
-			"hsl(0 0% 90%)",
-		];
+		printIcon(transparent_canvas, img_w, img_h);
+		
+		transparent_canvas.dataset.name = name + "-transparent.png";
+		
+		const w = transparent_canvas.width;
+		const h = transparent_canvas.height;
 		
 		canvases.slice(1).forEach((canvas, index) => {
 			canvas.width = w;
 			canvas.height = h;
 			const ctx = canvas.getContext("2d");
-			ctx.fillStyle = backgrounds[index];
+			ctx.fillStyle = bg_values[index];
 			ctx.fillRect(w/2 - img_w/2, 0, img_w, img_h);
-			ctx.drawImage(canvases[0], 0, 0);
+			ctx.drawImage(transparent_canvas, 0, 0);
+			canvas.dataset.name = name + "-" + bg_keys[index] + ".png";
 		});			
 	}
 	
@@ -314,3 +364,21 @@ function copyToClipboard(element) {
 		
 	}, "image/png");
 }
+
+function downloadIcon(icon, filename) {
+	const canvas = document.createElement("canvas");
+	canvas.width = icon.naturalWidth;
+	canvas.height = icon.naturalHeight;
+	const ctx = canvas.getContext("2d")
+	ctx.drawImage(icon, 0, 0);
+	downloadCanvas(canvas, filename);
+}
+
+function downloadCanvas(canvas, filename) {
+	const dataUrl = canvas.toDataURL("image/png");
+	const link = document.createElement("a");
+	link.download = filename;
+	link.href = dataUrl;
+	link.click();
+}
+

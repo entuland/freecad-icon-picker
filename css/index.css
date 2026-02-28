@@ -182,3 +182,24 @@ a, a:active, a:focus, a:visited {
     background-color: var(--pulse-color-end);
   }
 }
+
+.canvas-wrapper {
+	position: relative;
+}
+
+.canvas-wrapper:not(:hover) .copy-download-buttons {
+	display: none;
+}
+
+.canvas-wrapper .copy-download-buttons {
+	position: absolute;
+	right: 0;
+	top: 0;
+	display: flex;
+	flex-flow: column wrap;
+}
+
+.copy-download-buttons {
+	background: var(--bg);
+}
+
