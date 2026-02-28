@@ -1,4 +1,4 @@
-#FreeCAD Icons in PNG format
+# FreeCAD Icons in PNG format
 
 The icons contained in this "png" folder have been converted from the SVG files
 taken out of the FreeCAD repository https://github.com/freecad/freecad
